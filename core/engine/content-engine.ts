@@ -90,8 +90,9 @@ export class ContentEngine {
 
   start() {
     if (this.settings.isPaused) return
-    if (this.settings.bibleEnabled)      this.bibleTimer.start()
-    if (this.settings.motivationEnabled) this.quoteTimer.start()
+    if (this.settings.bibleEnabled) this.bibleTimer.start(this.settings.nextBibleFireAtEpochMs)
+    if (this.settings.motivationEnabled) this.quoteTimer.start(this.settings.nextMotivationFireAtEpochMs)
+    this.syncDeadlines()
   }
 
   destroy() {
@@ -131,6 +132,7 @@ export class ContentEngine {
     if (!prev.bibleEnabled      && this.settings.bibleEnabled      && !this.settings.isPaused) this.bibleTimer.start()
     if (!prev.motivationEnabled && this.settings.motivationEnabled && !this.settings.isPaused) this.quoteTimer.start()
 
+    this.syncDeadlines()
     this.emit('state-changed', this.getState())
   }
 
@@ -139,9 +141,9 @@ export class ContentEngine {
   pause()  { this.settings.isPaused = true;  this.bibleTimer.pause();  this.quoteTimer.pause();  this.emit('state-changed', this.getState()) }
   resume() { this.settings.isPaused = false; if (this.settings.bibleEnabled) this.bibleTimer.resume(); if (this.settings.motivationEnabled) this.quoteTimer.resume(); this.emit('state-changed', this.getState()) }
 
-  nextVerse() { if (this.currentVerse) this.prevVerseStack.push(this.currentVerse); this.currentVerse = this.pickVerse(); this.bibleTimer.reset(); this.recordHistory(); this.emit('verse-changed', this.getState()) }
+  nextVerse() { if (this.currentVerse) this.prevVerseStack.push(this.currentVerse); this.currentVerse = this.pickVerse(); this.bibleTimer.reset(); this.syncDeadlines(); this.recordHistory(); this.emit('verse-changed', this.getState()) }
   prevVerse() { const p = this.prevVerseStack.pop(); if (p) { this.currentVerse = p; this.bibleTimer.reset(); this.emit('verse-changed', this.getState()) } }
-  nextQuote() { if (this.currentQuote) this.prevQuoteStack.push(this.currentQuote); this.currentQuote = this.pickQuote(); this.quoteTimer.reset(); this.recordHistory(); this.emit('quote-changed', this.getState()) }
+  nextQuote() { if (this.currentQuote) this.prevQuoteStack.push(this.currentQuote); this.currentQuote = this.pickQuote(); this.quoteTimer.reset(); this.syncDeadlines(); this.recordHistory(); this.emit('quote-changed', this.getState()) }
   prevQuote() { const p = this.prevQuoteStack.pop(); if (p) { this.currentQuote = p; this.quoteTimer.reset(); this.emit('quote-changed', this.getState()) } }
 
   toggleFavoriteVerse(id: string): BibleVerse | undefined {
@@ -173,6 +175,7 @@ export class ContentEngine {
   getFavoriteVerses(): BibleVerse[]         { return this.verses.filter(v => v.favorite).map(v => ({ ...v })) }
   getFavoriteQuotes(): MotivationalQuote[]  { return this.quotes.filter(q => q.favorite).map(q => ({ ...q })) }
   getHistory():        HistoryEntry[]       { return [...this.history] }
+  getSettings(): UserSettings { return { ...this.settings } }
 
   hydrateFavorites(verseIds: string[], quoteIds: string[]) {
     const vs = new Set(verseIds); const qs = new Set(quoteIds)
@@ -213,19 +216,24 @@ export class ContentEngine {
   private rotateBible() {
     if (!withinSchedule(this.settings)) return
     if (this.currentVerse) this.prevVerseStack.push(this.currentVerse)
-    this.currentVerse = this.pickVerse(); this.recordHistory(); this.emit('verse-changed', this.getState())
+    this.currentVerse = this.pickVerse(); this.syncDeadlines(); this.recordHistory(); this.emit('verse-changed', this.getState())
   }
 
   private rotateQuote() {
     if (!withinSchedule(this.settings)) return
     if (this.currentQuote) this.prevQuoteStack.push(this.currentQuote)
-    this.currentQuote = this.pickQuote(); this.recordHistory(); this.emit('quote-changed', this.getState())
+    this.currentQuote = this.pickQuote(); this.syncDeadlines(); this.recordHistory(); this.emit('quote-changed', this.getState())
   }
 
   private recordHistory() {
     if (!this.currentVerse || !this.currentQuote) return
     this.history.unshift({ id: makeId(), bibleVerseId: this.currentVerse.id, quoteId: this.currentQuote.id, displayedAt: Date.now() })
     if (this.history.length > 500) this.history.length = 500
+  }
+
+  private syncDeadlines() {
+    this.settings.nextBibleFireAtEpochMs = this.bibleTimer.getNextFireAt()
+    this.settings.nextMotivationFireAtEpochMs = this.quoteTimer.getNextFireAt()
   }
 
   // ── Event bus ──────────────────────────────────────────────────────────────

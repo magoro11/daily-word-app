@@ -132,6 +132,8 @@ export interface UserSettings {
   // App state
   isPaused: boolean
   hasCompletedOnboarding: boolean
+  nextBibleFireAtEpochMs: number
+  nextMotivationFireAtEpochMs: number
 }
 
 // ─── Labels & Intervals ───────────────────────────────────────────────────────
@@ -236,4 +238,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
 
   isPaused:               false,
   hasCompletedOnboarding: false,
+  nextBibleFireAtEpochMs: 0,
+  nextMotivationFireAtEpochMs: 0,
 }

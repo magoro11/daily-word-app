@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.DailyWord" parent="android:style/Theme.Material3.DayNight.NoActionBar">
+        <item name="android:colorPrimary">#5B7B67</item>
+        <item name="android:colorPrimaryVariant">#3E5A4A</item>
+        <item name="android:colorAccent">#DCCB98</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

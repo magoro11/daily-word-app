@@ -7,11 +7,16 @@ import { Platform } from 'react-native'
 
 export async function requestNotificationPermission(): Promise<boolean> {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('daily-word', {
-      name:       'Daily Word',
+    await Notifications.setNotificationChannelAsync('daily-word-updates', {
+      name:       'Content updates',
       importance: Notifications.AndroidImportance.DEFAULT,
       vibrationPattern: [0, 200],
       lightColor: '#6366f1',
+    })
+    await Notifications.setNotificationChannelAsync('daily-word-status', {
+      name: 'Daily Word status',
+      importance: Notifications.AndroidImportance.LOW,
+      sound: undefined,
     })
   }
   const { status: existing } = await Notifications.getPermissionsAsync()
@@ -26,7 +31,7 @@ export async function sendLocalNotification(
 ): Promise<void> {
   try {
     await Notifications.scheduleNotificationAsync({
-      content: { title, body, sound: false },
+      content: { title, body, sound: false, ...(Platform.OS === 'android' ? { channelId: 'daily-word-updates' } : {}) },
       trigger: null,  // fire immediately
     })
   } catch { /* ignore — permissions not granted */ }

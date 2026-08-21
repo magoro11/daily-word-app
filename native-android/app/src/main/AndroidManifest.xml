@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <application android:name=".DailyWordApplication" android:allowBackup="true" android:theme="@style/Theme.DailyWord" android:label="Daily Word">
+        <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+        <activity android:name=".overlay.OverlayActivity" android:exported="false" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <service android:name=".service.DailyWordService" android:foregroundServiceType="specialUse" android:exported="false"><property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Displays user-enabled inspirational content and maintains user-configured schedules."/></service>
+        <service android:name=".overlay.OverlayService" android:exported="false" />
+        <receiver android:name=".service.RotationReceiver" android:exported="false" />
+        <receiver android:name=".service.BootReceiver" android:exported="true"><intent-filter><action android:name="android.intent.action.BOOT_COMPLETED"/><action android:name="android.intent.action.MY_PACKAGE_REPLACED"/></intent-filter></receiver>
+        <receiver android:name=".widget.DailyWordWidget" android:exported="true"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/><action android:name="com.dailyword.nativeapp.SKIP"/></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/daily_word_widget"/></receiver>
+    </application>
+</manifest>

@@ -114,13 +114,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
     const state = engine.getState()
 
+    const restoredSettings = engine.getSettings()
     set({
       currentVerse:    state.currentVerse,
       currentQuote:    state.currentQuote,
       bibleRemainingMs: state.bibleRemainingMs,
       quoteRemainingMs: state.quoteRemainingMs,
       isPaused:         state.isPaused,
-      settings:         data.settings,
+      settings:         restoredSettings,
       favoriteVerses:   engine.getFavoriteVerses(),
       favoriteQuotes:   engine.getFavoriteQuotes(),
       history:          data.history,
@@ -128,6 +129,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       isDark:           resolveIsDark(data.settings),
       isHydrated:       true,
     })
+    saveSettings(restoredSettings)
   },
 
   // ── Content actions ─────────────────────────────────────────────────────────
@@ -191,8 +193,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   // ── Settings ─────────────────────────────────────────────────────────────────
 
   updateSettings(partial) {
-    const next = { ...get().settings, ...partial }
-    engine.applySettings(next)
+    engine.applySettings({ ...get().settings, ...partial })
+    const next = engine.getSettings()
     set({ settings: next, isDark: resolveIsDark(next) })
     saveSettings(next)
   },
@@ -228,6 +230,7 @@ engine.on('verse-changed', (state: EngineState) => {
     verseKey:        st.verseKey + 1,
   }))
   flushHistory()
+  saveSettings(engine.getSettings())
 })
 
 engine.on('quote-changed', (state: EngineState) => {
@@ -237,6 +240,7 @@ engine.on('quote-changed', (state: EngineState) => {
     quoteKey:        st.quoteKey + 1,
   }))
   flushHistory()
+  saveSettings(engine.getSettings())
 })
 
 engine.on('state-changed', (state: EngineState) => {

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Daily Word</string>
+    <string name="widget_verse">Your verse will appear here</string>
+    <string name="widget_quote">A steady word for your day</string>
+</resources>

@@ -6,46 +6,40 @@
  */
 export class AccurateTimer {
   private intervalMs: number
-  private callback: () => void
-  private startedAt: number | null = null
-  private pausedAt: number | null = null
-  private accumulatedMs = 0
+  private readonly callback: () => void
+  private nextFireAt = 0
+  private pausedRemainingMs: number | null = null
   private handle: ReturnType<typeof setInterval> | null = null
-  private readonly tickMs = 1000
 
   constructor(intervalMs: number, callback: () => void) {
     this.intervalMs = intervalMs
-    this.callback   = callback
+    this.callback = callback
   }
 
-  start() {
-    if (this.startedAt !== null) return
-    this.startedAt     = Date.now()
-    this.accumulatedMs = 0
-    this.pausedAt      = null
+  start(restoredNextFireAt?: number) {
+    if (this.handle || this.pausedRemainingMs !== null) return
+    this.nextFireAt = restoredNextFireAt && restoredNextFireAt > 0 ? restoredNextFireAt : Date.now() + this.intervalMs
     this.scheduleTick()
+    this.tick()
   }
 
   pause() {
-    if (this.pausedAt !== null || this.startedAt === null) return
-    this.pausedAt       = Date.now()
-    this.accumulatedMs += this.pausedAt - this.startedAt
-    this.startedAt      = null
+    if (this.pausedRemainingMs !== null) return
+    this.pausedRemainingMs = this.getRemainingMs()
     this.clearTick()
   }
 
   resume() {
-    if (this.pausedAt === null) return
-    this.startedAt = Date.now()
-    this.pausedAt  = null
+    if (this.pausedRemainingMs === null) return
+    this.nextFireAt = Date.now() + this.pausedRemainingMs
+    this.pausedRemainingMs = null
     this.scheduleTick()
   }
 
   reset() {
     this.clearTick()
-    this.startedAt     = Date.now()
-    this.accumulatedMs = 0
-    this.pausedAt      = null
+    this.nextFireAt = Date.now() + this.intervalMs
+    this.pausedRemainingMs = null
     this.scheduleTick()
   }
 
@@ -56,26 +50,18 @@ export class AccurateTimer {
 
   destroy() {
     this.clearTick()
-    this.startedAt = null
-    this.pausedAt  = null
+    this.nextFireAt = 0
+    this.pausedRemainingMs = null
   }
 
-  getRemainingMs(): number {
-    return Math.max(0, this.intervalMs - this.getElapsedMs())
-  }
-
-  getElapsedMs(): number {
-    if (this.pausedAt  !== null) return this.accumulatedMs
-    if (this.startedAt !== null) return this.accumulatedMs + (Date.now() - this.startedAt)
-    return 0
-  }
-
-  isPaused():  boolean { return this.pausedAt  !== null }
-  isRunning(): boolean { return this.startedAt !== null }
+  getNextFireAt(): number { return this.pausedRemainingMs === null ? this.nextFireAt : Date.now() + this.pausedRemainingMs }
+  getRemainingMs(): number { return this.pausedRemainingMs ?? Math.max(0, this.nextFireAt - Date.now()) }
+  isPaused(): boolean { return this.pausedRemainingMs !== null }
+  isRunning(): boolean { return this.handle !== null }
 
   private scheduleTick() {
     this.clearTick()
-    this.handle = setInterval(() => this.tick(), this.tickMs)
+    this.handle = setInterval(() => this.tick(), 1000)
   }
 
   private clearTick() {
@@ -83,9 +69,8 @@ export class AccurateTimer {
   }
 
   private tick() {
-    if (this.getElapsedMs() >= this.intervalMs) {
-      this.startedAt     = Date.now()
-      this.accumulatedMs = 0
+    if (this.nextFireAt && Date.now() >= this.nextFireAt) {
+      this.nextFireAt = Date.now() + this.intervalMs
       this.callback()
     }
   }
